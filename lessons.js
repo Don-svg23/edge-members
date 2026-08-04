@@ -52,4 +52,34 @@ module.exports = [
       explain: 'A plan is a pre-commitment device — it removes decisions from the moment you\'re most likely to make a bad one.',
     },
   },
+  {
+    title: 'Pips, lots, and spread',
+    body: "A pip is the smallest standard price move quoted for most currency pairs — usually the fourth decimal place, so EUR/USD moving from 1.1000 to 1.1001 is one pip. A lot is the standardized trade size: a standard lot is 100,000 units of the base currency, with mini (10,000) and micro (1,000) lots letting smaller accounts trade smaller sizes. The spread is the gap between the price you can buy at (ask) and sell at (bid) — it's baked into every trade as a cost before you're even in profit.",
+    quiz: {
+      q: 'The spread is best described as:',
+      options: ['A fee charged once per month', 'The gap between the buy and sell price, paid on every trade', 'A bonus paid by the broker'],
+      correct: 1,
+      explain: 'The spread is the difference between bid and ask price — a cost built into entering and exiting every trade, not a separate monthly fee.',
+    },
+  },
+  {
+    title: 'Leverage and margin',
+    body: "Leverage lets you control a larger position than your account balance alone would allow — 30:1 leverage means a $1,000 deposit can control a $30,000 position. Margin is the portion of your own capital a broker sets aside as collateral for that leveraged position. Leverage magnifies gains and losses by the same ratio — it doesn't change your edge, it changes how violently your account moves for a given price change, which is why position sizing matters more as leverage increases, not less.",
+    quiz: {
+      q: 'Higher leverage means:',
+      options: ['Your strategy becomes more profitable', 'Both gains and losses move faster for the same price change', 'Your broker takes on all the risk'],
+      correct: 1,
+      explain: 'Leverage is a multiplier on price movement, not on skill or edge — it speeds up both directions equally.',
+    },
+  },
+  {
+    title: 'Order types: market, limit, and stop',
+    body: "A market order fills immediately at the best available price — you get in now, not necessarily at the price you last saw. A limit order only fills at your specified price or better, trading a guaranteed fill for price control. A stop order sits inactive until price reaches a trigger level, then becomes a market order — this is how most stop-losses actually work, and why a stop can fill at a worse price than intended during a fast move.",
+    quiz: {
+      q: 'A stop-loss order becomes active:',
+      options: ['The moment you place it', 'Only once price reaches your trigger level', 'Only at market close'],
+      correct: 1,
+      explain: 'A stop order is dormant until price touches your trigger, at which point it becomes a market order — which is also why fast moves can cause it to fill past your intended level.',
+    },
+  },
 ];

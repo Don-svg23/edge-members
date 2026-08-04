@@ -647,6 +647,7 @@ function renderLedger() {
       <div class="stat"><span class="stat-num" id="statAvgR">—</span><span class="stat-label">Avg R</span></div>
       <div class="stat"><span class="stat-num" id="statExpectancy">—</span><span class="stat-label">Expectancy (R)</span></div>
     </div>
+    <button class="btn" id="exportBtn" type="button" style="margin:10px 0 0;">Export CSV</button>
 
     <form id="tradeForm" class="grid-form">
       <input name="symbol" placeholder="Symbol (e.g. EURUSD)" required>
@@ -708,10 +709,11 @@ function renderLedger() {
           load();
         }));
       }
+      let currentTrades = [];
       async function load() {
-        const trades = await (await fetch('/api/trades')).json();
-        renderStats(trades);
-        renderList(trades);
+        currentTrades = await (await fetch('/api/trades')).json();
+        renderStats(currentTrades);
+        renderList(currentTrades);
       }
       document.getElementById('tradeForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -720,6 +722,16 @@ function renderLedger() {
         await fetch('/api/trades', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
         e.target.reset();
         load();
+      });
+      document.getElementById('exportBtn').addEventListener('click', () => {
+        const cols = ['symbol','direction','entry','stop','exit','strategy','emotion','notes','createdAt'];
+        const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+        const rows = [cols.join(',')].concat(currentTrades.map(t => cols.map(c => esc(t[c])).join(',')));
+        const blob = new Blob([rows.join('\\n')], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'the-ledger-export.csv';
+        a.click();
       });
       attachCSVImport(load);
       load();

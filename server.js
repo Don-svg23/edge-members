@@ -254,7 +254,7 @@ app.get('/course', requireSession, safeRoute(async (req, res) => {
   res.send(renderCourse(member.courseProgress || []));
 }));
 
-app.post('/api/course/progress', requireSession, express.json(), (req, res) => {
+app.post('/api/course/progress', requireSession, requireProductApi('asset-pack-89298370562-example-product-1'), express.json(), (req, res) => {
   const member = store.loadMember(req.member.email);
   const idx = req.body.index;
   const done = new Set(member.courseProgress || []);
@@ -293,12 +293,26 @@ app.get('/ledger', requireSession, safeRoute(async (req, res) => {
   res.send(renderLedger());
 }));
 
-app.get('/api/trades', requireSession, (req, res) => {
+async function requireTradesAccess(req, res, next) {
+  const purchased = await findPurchasedHandlesForEmail(req.member.email);
+  if (purchased.has('the-ledger') || purchased.has('backtest-suite')) return next();
+  res.status(403).json({ error: 'Not purchased' });
+}
+
+function requireProductApi(handle) {
+  return async (req, res, next) => {
+    const purchased = await findPurchasedHandlesForEmail(req.member.email);
+    if (purchased.has(handle)) return next();
+    res.status(403).json({ error: 'Not purchased' });
+  };
+}
+
+app.get('/api/trades', requireSession, requireTradesAccess, (req, res) => {
   const member = store.loadMember(req.member.email);
   res.json(member.trades || []);
 });
 
-app.post('/api/trades', requireSession, (req, res) => {
+app.post('/api/trades', requireSession, requireTradesAccess, (req, res) => {
   const member = store.loadMember(req.member.email);
   const t = req.body;
   const trade = {
@@ -320,7 +334,7 @@ app.post('/api/trades', requireSession, (req, res) => {
   res.json({ ok: true, trade });
 });
 
-app.delete('/api/trades/:id', requireSession, (req, res) => {
+app.delete('/api/trades/:id', requireSession, requireTradesAccess, (req, res) => {
   const member = store.loadMember(req.member.email);
   member.trades = (member.trades || []).filter(t => String(t.id) !== req.params.id);
   store.saveMember(req.member.email, member);
@@ -388,7 +402,7 @@ function parseTradesCSV(text) {
   return trades;
 }
 
-app.post('/api/trades/import', requireSession, (req, res) => {
+app.post('/api/trades/import', requireSession, requireTradesAccess, (req, res) => {
   const member = store.loadMember(req.member.email);
   const parsed = parseTradesCSV(req.body.csv).slice(0, 500);
   const base = Date.now();
@@ -434,7 +448,7 @@ app.get('/checklist', requireSession, safeRoute(async (req, res) => {
   res.send(renderChecklist(checklist));
 }));
 
-app.post('/api/checklist/criteria', requireSession, (req, res) => {
+app.post('/api/checklist/criteria', requireSession, requireProductApi('signal-engine'), (req, res) => {
   const member = store.loadMember(req.member.email);
   const checklist = member.checklist || { criteria: DEFAULT_CRITERIA, runs: [] };
   const criteria = (Array.isArray(req.body.criteria) ? req.body.criteria : [])
@@ -445,7 +459,7 @@ app.post('/api/checklist/criteria', requireSession, (req, res) => {
   res.json({ ok: true, criteria: checklist.criteria });
 });
 
-app.post('/api/checklist/run', requireSession, (req, res) => {
+app.post('/api/checklist/run', requireSession, requireProductApi('signal-engine'), (req, res) => {
   const member = store.loadMember(req.member.email);
   const checklist = member.checklist || { criteria: DEFAULT_CRITERIA, runs: [] };
   const checked = Array.isArray(req.body.checked) ? req.body.checked.map(Boolean) : [];
@@ -495,7 +509,7 @@ app.get('/lessons', requireSession, safeRoute(async (req, res) => {
   res.send(renderLessons(member.lessonProgress || []));
 }));
 
-app.post('/api/lessons/progress', requireSession, (req, res) => {
+app.post('/api/lessons/progress', requireSession, requireProductApi('learn-everything-about-markets-and-trading'), (req, res) => {
   const member = store.loadMember(req.member.email);
   const done = new Set(member.lessonProgress || []);
   if (req.body.complete) done.add(req.body.index); else done.delete(req.body.index);

@@ -52,6 +52,8 @@ async function findPurchasedHandlesForEmail(email) {
       'learn-everything-about-markets-and-trading',
       'trading-journal-template-excel',
       'position-size-amp-risk-calculator-excel',
+      'signal-engine',
+      'backtest-suite',
     ]);
   }
   const cached = purchaseCache.get(email);
@@ -83,8 +85,20 @@ async function findPurchasedHandlesForEmail(email) {
       if (item.product?.handle) handles.add(item.product.handle);
     }
   }
+  expandBundles(handles);
   purchaseCache.set(email, { handles, expiresAt: Date.now() + CACHE_MS });
   return handles;
+}
+
+// The Desk Bundle grants access to its component tools without those needing separate purchase.
+const BUNDLES = {
+  'the-desk-bundle': ['the-ledger', 'risk-console', 'signal-engine', 'backtest-suite'],
+};
+
+function expandBundles(handles) {
+  for (const [bundleHandle, includes] of Object.entries(BUNDLES)) {
+    if (handles.has(bundleHandle)) includes.forEach(h => handles.add(h));
+  }
 }
 
 // --- Magic-link auth ---------------------------------------------------
@@ -296,6 +310,7 @@ app.post('/api/trades', requireSession, (req, res) => {
     exit: Number(t.exit) || 0,
     riskAmount: Number(t.riskAmount) || 0,
     emotion: String(t.emotion || '').slice(0, 40),
+    strategy: String(t.strategy || '').slice(0, 40),
     notes: String(t.notes || '').slice(0, 500),
     createdAt: new Date().toISOString(),
   };
@@ -331,6 +346,76 @@ app.get('/download/:handle', requireSession, safeRoute(async (req, res) => {
   res.download(filePath, `Edge Trading Co - ${product.name}.xlsx`);
 }));
 
+// --- Setup Checklist (your own trade-qualification rules, scored) -------
+
+const DEFAULT_CRITERIA = [
+  'Trend confirmed on the higher timeframe',
+  'Price at a key level or zone, not mid-range',
+  'Risk:reward is at least 2:1',
+  'Volume or momentum confirms the move',
+  'Plan (entry, stop, target) written before entry',
+];
+
+app.get('/checklist', requireSession, safeRoute(async (req, res) => {
+  if (!(await requireProduct(req, res, 'signal-engine'))) return res.status(403).send(renderLocked());
+  const member = store.loadMember(req.member.email);
+  const checklist = member.checklist || { criteria: DEFAULT_CRITERIA, runs: [] };
+  res.send(renderChecklist(checklist));
+}));
+
+app.post('/api/checklist/criteria', requireSession, (req, res) => {
+  const member = store.loadMember(req.member.email);
+  const checklist = member.checklist || { criteria: DEFAULT_CRITERIA, runs: [] };
+  const criteria = (Array.isArray(req.body.criteria) ? req.body.criteria : [])
+    .map(c => String(c).slice(0, 120)).filter(Boolean).slice(0, 15);
+  checklist.criteria = criteria.length ? criteria : DEFAULT_CRITERIA;
+  member.checklist = checklist;
+  store.saveMember(req.member.email, member);
+  res.json({ ok: true, criteria: checklist.criteria });
+});
+
+app.post('/api/checklist/run', requireSession, (req, res) => {
+  const member = store.loadMember(req.member.email);
+  const checklist = member.checklist || { criteria: DEFAULT_CRITERIA, runs: [] };
+  const checked = Array.isArray(req.body.checked) ? req.body.checked.map(Boolean) : [];
+  const score = checked.length ? Math.round((checked.filter(Boolean).length / checked.length) * 100) : 0;
+  const run = {
+    id: Date.now(),
+    symbol: String(req.body.symbol || '').slice(0, 20),
+    checked,
+    score,
+    createdAt: new Date().toISOString(),
+  };
+  checklist.runs = checklist.runs || [];
+  checklist.runs.unshift(run);
+  member.checklist = checklist;
+  store.saveMember(req.member.email, member);
+  res.json({ ok: true, run });
+});
+
+// --- Strategy Lab (compare your logged trades by strategy tag) ----------
+
+app.get('/strategy-lab', requireSession, safeRoute(async (req, res) => {
+  if (!(await requireProduct(req, res, 'backtest-suite'))) return res.status(403).send(renderLocked());
+  res.send(renderStrategyLab());
+}));
+
+// --- The Desk Bundle (info page — component tools unlock automatically) -
+
+app.get('/bundle', requireSession, safeRoute(async (req, res) => {
+  if (!(await requireProduct(req, res, 'the-desk-bundle'))) return res.status(403).send(renderLocked());
+  res.send(shell('The Desk Bundle', 'bundle', `
+    <h1>The Desk Bundle</h1>
+    <p class="muted">All four tools are unlocked on your account — no separate purchase needed.</p>
+    <div class="grid">
+      <a class="tile" href="/ledger"><span class="tile-kind">ledger</span><span class="tile-name">The Ledger</span><span class="tile-go">Open &rarr;</span></a>
+      <a class="tile" href="/calculator"><span class="tile-kind">calculator</span><span class="tile-name">Risk Console</span><span class="tile-go">Open &rarr;</span></a>
+      <a class="tile" href="/checklist"><span class="tile-kind">checklist</span><span class="tile-name">Setup Checklist</span><span class="tile-go">Open &rarr;</span></a>
+      <a class="tile" href="/strategy-lab"><span class="tile-kind">strategy lab</span><span class="tile-name">Strategy Lab</span><span class="tile-go">Open &rarr;</span></a>
+    </div>
+  `));
+}));
+
 // --- Learn Everything (interactive lessons + quizzes) -------------------
 
 app.get('/lessons', requireSession, safeRoute(async (req, res) => {
@@ -356,6 +441,8 @@ const NAV = [
   { key: 'lessons', label: 'Learn Markets', href: '/lessons' },
   { key: 'ledger', label: 'The Ledger', href: '/ledger' },
   { key: 'calculator', label: 'Risk Console', href: '/calculator' },
+  { key: 'checklist', label: 'Setup Checklist', href: '/checklist' },
+  { key: 'strategylab', label: 'Strategy Lab', href: '/strategy-lab' },
   { key: 'discord', label: 'Community', href: '/discord' },
   { key: 'mentor', label: 'AI Mentor', href: '/mentor' },
 ];
@@ -363,7 +450,7 @@ const NAV = [
 function renderDashboard(email, owned, notOwned, member) {
   const ownedSet = new Set(owned.map(p => p.handle));
   const tiles = owned.map(p => {
-    const linkMap = { course: '/course', discord: '/discord', mentor: '/mentor', ledger: '/ledger', calculator: '/calculator', lessons: '/lessons' };
+    const linkMap = { course: '/course', discord: '/discord', mentor: '/mentor', ledger: '/ledger', calculator: '/calculator', lessons: '/lessons', checklist: '/checklist', strategylab: '/strategy-lab', bundle: '/bundle' };
     const link = p.kind === 'file' ? `/download/${p.handle}` : linkMap[p.kind];
     const goLabel = p.kind === 'file' ? 'Download &rarr;' : 'Open &rarr;';
     return `
@@ -566,6 +653,123 @@ function renderCalculator() {
   `);
 }
 
+function renderChecklist(checklist) {
+  const criteriaLines = checklist.criteria.map(escapeHtml).join('\n');
+  const runs = (checklist.runs || []).slice(0, 20);
+  const runRows = runs.map(r => `
+    <div class="trade-row">
+      <div><strong>${escapeHtml(r.symbol) || 'Untitled'}</strong> <span class="muted">${new Date(r.createdAt).toLocaleDateString()}</span></div>
+      <div class="r-badge ${r.score >= 80 ? 'pos' : r.score >= 50 ? '' : 'neg'}">${r.score}%</div>
+    </div>`).join('');
+
+  return shell('Setup Checklist', 'checklist', `
+    <h1>Setup Checklist</h1>
+    <p class="muted">This is your own qualification list, not a signal feed — nothing here reads the market for you. Define what a valid setup looks like to you, then check yourself against it before every trade.</p>
+
+    <h2>Your criteria</h2>
+    <p class="muted">One per line. These are entirely yours — edit them anytime as your process evolves.</p>
+    <textarea id="criteriaBox" class="criteria-box">${criteriaLines}</textarea>
+    <button class="btn" id="saveCriteria" style="margin-top:10px;">Save criteria</button>
+
+    <h2>Run a check</h2>
+    <div id="runForm"></div>
+
+    <h2>History</h2>
+    <div id="runHistory">${runRows || '<p class="muted">No checks run yet.</p>'}</div>
+
+    <script>
+      let criteria = ${JSON.stringify(checklist.criteria)};
+
+      function renderRunForm() {
+        const el = document.getElementById('runForm');
+        el.innerHTML = '<input id="runSymbol" placeholder="Symbol / setup name" style="margin-bottom:10px;width:100%;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;font-family:inherit;">' +
+          criteria.map((c, i) => '<label class="check" style="display:flex;margin-bottom:6px;"><input type="checkbox" class="crit-box" data-i="' + i + '"> ' + c + '</label>').join('') +
+          '<button class="btn" id="scoreBtn" style="margin-top:10px;">Score this setup</button>' +
+          '<p id="scoreResult" style="font-family:var(--heading);font-size:20px;margin-top:12px;"></p>';
+        document.getElementById('scoreBtn').addEventListener('click', async () => {
+          const checked = Array.from(document.querySelectorAll('.crit-box')).map(b => b.checked);
+          const symbol = document.getElementById('runSymbol').value;
+          const res = await (await fetch('/api/checklist/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ symbol, checked }) })).json();
+          document.getElementById('scoreResult').textContent = 'Score: ' + res.run.score + '%';
+          const hist = document.getElementById('runHistory');
+          const row = document.createElement('div');
+          row.className = 'trade-row';
+          row.innerHTML = '<div><strong>' + (symbol || 'Untitled') + '</strong></div><div class="r-badge ' + (res.run.score >= 80 ? 'pos' : res.run.score >= 50 ? '' : 'neg') + '">' + res.run.score + '%</div>';
+          hist.prepend(row);
+        });
+      }
+      renderRunForm();
+
+      document.getElementById('saveCriteria').addEventListener('click', async () => {
+        const lines = document.getElementById('criteriaBox').value.split('\\n').map(s => s.trim()).filter(Boolean);
+        const res = await (await fetch('/api/checklist/criteria', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ criteria: lines }) })).json();
+        criteria = res.criteria;
+        renderRunForm();
+      });
+    </script>
+  `);
+}
+
+function renderStrategyLab() {
+  return shell('Strategy Lab', 'strategylab', `
+    <h1>Strategy Lab</h1>
+    <p class="muted">Tag your trades by strategy and see which of your own approaches actually work — built from your logged trades, not backtested market data.</p>
+
+    <form id="stratForm" class="grid-form">
+      <input name="strategy" placeholder="Strategy name (e.g. Breakout Retest)" required style="grid-column:1/-1;">
+      <input name="symbol" placeholder="Symbol" required>
+      <select name="direction"><option value="long">Long</option><option value="short">Short</option></select>
+      <input name="entry" type="number" step="any" placeholder="Entry price" required>
+      <input name="stop" type="number" step="any" placeholder="Stop price" required>
+      <input name="exit" type="number" step="any" placeholder="Exit price" required>
+      <button type="submit">Log trade</button>
+    </form>
+
+    <h2>Strategy comparison</h2>
+    <div id="stratTable"></div>
+
+    <script>
+      function computeR(t) {
+        const risk = Math.abs(t.entry - t.stop);
+        if (!risk) return 0;
+        const move = t.direction === 'long' ? (t.exit - t.entry) : (t.entry - t.exit);
+        return move / risk;
+      }
+      function renderTable(trades) {
+        const groups = {};
+        trades.forEach(t => {
+          const key = t.strategy || 'Untagged';
+          (groups[key] = groups[key] || []).push(t);
+        });
+        const el = document.getElementById('stratTable');
+        const names = Object.keys(groups);
+        if (!names.length) { el.innerHTML = '<p class="muted">Log a few trades above to see the comparison.</p>'; return; }
+        el.innerHTML = '<div class="grid">' + names.map(name => {
+          const rs = groups[name].map(computeR);
+          const wins = rs.filter(r => r > 0);
+          const winrate = (wins.length / rs.length * 100).toFixed(0) + '%';
+          const avgR = (rs.reduce((a,b)=>a+b,0) / rs.length).toFixed(2) + 'R';
+          return '<div class="stat" style="min-width:180px;"><span class="stat-num">' + name + '</span>' +
+            '<span class="stat-label">' + rs.length + ' trades &middot; ' + winrate + ' win rate &middot; ' + avgR + ' avg</span></div>';
+        }).join('') + '</div>';
+      }
+      async function load() {
+        const trades = await (await fetch('/api/trades')).json();
+        renderTable(trades);
+      }
+      document.getElementById('stratForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const body = Object.fromEntries(fd.entries());
+        await fetch('/api/trades', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        e.target.reset();
+        load();
+      });
+      load();
+    </script>
+  `);
+}
+
 function renderLessons(progress) {
   const doneSet = new Set(progress);
   const items = LESSONS.map((l, i) => `
@@ -679,6 +883,7 @@ a.btn{display:inline-block;}
 .quiz-opt.right{background:#e8f5e9;border-color:#1b5e20;}
 .quiz-opt.wrong{background:#fdecea;border-color:#a33;}
 .quiz-feedback{font-size:13px;color:var(--text-2);margin-top:6px;}
+.criteria-box{width:100%;min-height:110px;padding:12px 14px;border:1px solid var(--outline);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;resize:vertical;}
 @media (max-width:720px){body{flex-direction:column;} .sidebar{width:100%;height:auto;position:static;display:flex;flex-wrap:wrap;gap:4px;} .course-layout,.calc-layout{grid-template-columns:1fr;}}
 </style></head><body>
 <div class="sidebar">

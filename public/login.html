@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Your Desk — Edge Trading Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ffffff;--text:#191919;--text-2:#5e5e5f;--outline:#c4c7c7;--heading:'Fraunces',Georgia,serif;--body:'Inter',sans-serif;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.card{max-width:380px;width:100%;padding:24px;text-align:center;}
+.brand{font-family:var(--heading);font-size:15px;margin-bottom:40px;}
+h1{font-family:var(--heading);font-weight:500;font-size:26px;margin:0 0 10px;}
+p{color:var(--text-2);font-size:14px;line-height:1.6;margin:0 0 28px;}
+input{width:100%;padding:12px 14px;border:1px solid var(--outline);border-radius:10px;font-size:14px;font-family:var(--body);margin-bottom:14px;}
+input:focus{outline:none;border-color:var(--text);}
+button{width:100%;background:var(--text);color:#fff;border:none;border-radius:999px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;}
+.error{color:#a33;font-size:13px;margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">EDGE TRADING CO.</div>
+  <h1>Your desk</h1>
+  <p>Enter the email you used to purchase, and we'll send you a link in.</p>
+  <div class="error" id="err"></div>
+  <form action="/auth/request" method="POST">
+    <input type="email" name="email" placeholder="you@example.com" required>
+    <button type="submit">Send me a link</button>
+  </form>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const err = params.get('error');
+  if (err === 'expired-link') document.getElementById('err').textContent = 'That link expired. Request a new one.';
+  if (err === 'invalid-email') document.getElementById('err').textContent = 'Enter a valid email.';
+</script>
+</body>
+</html>

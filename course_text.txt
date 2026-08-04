@@ -1,0 +1,109 @@
+EDGE TRADING CO.
+ADVANCED TRADING COURSE
+Market Structure · Risk · Edge · Psychology · Process
+Digital Access Edition
+Important Notice
+This course is provided for educational purposes only. Nothing in this material constitutes financial, investment, tax, or legal advice, and nothing here is a recommendation to buy, sell, or hold any security, currency, derivative, or other financial instrument.
+Trading and investing involve substantial risk of loss and are not suitable for every person. Past performance of any strategy, indicator, or approach discussed here is not indicative of future results. You are solely responsible for your own trading decisions and should consult a licensed financial professional before risking real capital.
+Edge Trading Co. and the author of this material are not liable for any losses, direct or indirect, arising from the use of the concepts described here.
+Contents
+Module 1 — Market Structure & How Price Actually Moves
+Module 2 — Risk Management & Position Sizing
+Module 3 — Building a Statistical Edge
+Module 4 — A Practical Technical Framework
+Module 5 — Trading Psychology & Discipline
+Module 6 — Putting It Together: A Repeatable Process
+Module 1 — Market Structure & How Price Actually Moves
+Before any strategy, indicator, or setup matters, you need a working model of why price moves at all. Markets are not random noise — they are an ongoing auction between buyers and sellers, and price is simply the record of where that auction is currently being settled.
+1.1 Price as an auction, not a line
+Every candle on your chart is the outcome of an auction over that period: who was more aggressive, buyers or sellers, and at what price did enough of both sides agree to trade. Thinking in these terms changes how you read a chart — you start asking "who is trapped here?" and "where did aggressive buying or selling actually happen?" instead of just "is this line going up or down?"
+1.2 Support and resistance are zones, not lines
+A price level rarely turns a market on its own. What matters is the zone of prior decision-making around it — the range where orders clustered the last time price visited. Draw zones with width, not a single pixel-thin line, and expect the first touch of a zone to be tested, not necessarily respected.
+Mark zones from where price reversed with momentum, not just any touch
+Wider zones on higher timeframes, tighter zones on lower timeframes
+A zone that has been tested multiple times without breaking gets more weight, not less — until it finally breaks, at which point it often breaks hard
+1.3 Trend vs. range: reading the current regime
+Every strategy works in one regime and loses money in the other. Trend-following setups bleed in a range; mean-reversion setups get run over in a trend. Before you decide what to trade, decide what regime you are in:
+Trending: a clear sequence of higher highs/higher lows (or the inverse), with pullbacks that fail to reach the prior extreme
+Ranging: price oscillating between two zones without making sustained progress in either direction
+Transitional: the market is testing the edge of a range with increasing conviction — often the highest-risk, highest-reward phase
+KEY IDEA  Your first decision every session isn't "what do I buy," it's "what regime am I in, and does my strategy actually work in this regime?"
+1.4 Liquidity: why price moves to levels that seem obvious
+Price is frequently drawn toward areas where a large concentration of stop-losses or pending orders sits — obvious swing highs/lows, round numbers, and prior session extremes. This isn't manipulation in most cases; it's simply where the largest pool of resting orders exists, so it's where the largest, most efficient fills are available to bigger participants. Recognizing these zones helps you avoid placing your own stop in the most obvious, most "swept" location on the chart.
+Module 2 — Risk Management & Position Sizing
+More trading accounts are destroyed by position sizing mistakes than by bad analysis. You can be right about direction and still lose money if your size is wrong; you can be wrong about direction repeatedly and still survive if your size is right.
+2.1 The math of drawdown
+Losses and the gains needed to recover from them are not symmetrical. This is the single most important table in trading:
+Drawdown
+Gain required to recover
+10%
+11.1%
+20%
+25.0%
+30%
+42.9%
+50%
+100.0%
+75%
+300.0%
+90%
+900.0%
+A 50% drawdown doesn't need a 50% gain to recover — it needs a 100% gain. This is why capital preservation is not a slogan, it's arithmetic.
+2.2 Fixed-fractional position sizing
+Risking a fixed percentage of account equity per trade — not a fixed dollar amount — is the standard professional approach. As your account grows, your position size grows proportionally; as it shrinks, position size shrinks too, which naturally slows losses during a rough stretch.
+Most professional discretionary traders risk 0.5%–2% of account equity per trade
+Risk = (Entry Price − Stop Price) × Position Size — solve for Position Size once you know your dollar risk
+This is exactly what the Position Size & Risk Calculator in your toolkit automates — use it before every trade, not after
+2.3 Thinking in R-multiples
+An "R" is one unit of initial risk. If you risk $100 on a trade and it closes at +$250, that's a +2.5R trade — regardless of the dollar amount, this framing lets you compare very different trades, account sizes, and instruments on the same scale.
+KEY IDEA  Track every trade in R, not just dollars. A system that wins 40% of the time at +2.5R average win and −1R average loss is profitable; a system that wins 70% of the time at +0.3R average win and −1R average loss usually isn't. Win rate alone tells you almost nothing.
+2.4 Stops belong at structure, not at a round percentage
+A stop-loss placed at an arbitrary "2% below entry" ignores what the market is actually telling you. Place stops beyond the structural level that would invalidate your trade idea — beyond the swing low that defines your setup, for example — then size your position to fit that distance, not the other way around.
+Module 3 — Building a Statistical Edge
+3.1 What "edge" actually means
+An edge is a repeatable, positive expectancy over a large enough sample of trades. It is not a single winning trade, a feeling of conviction, or a strategy that "makes sense" intuitively — it is a number you can calculate.
+3.2 The expectancy formula
+FORMULA  Expectancy = (Win% × Average Win) − (Loss% × Average Loss)
+A positive expectancy system will make money over a large sample of trades even with a losing streak in the middle of it. A negative expectancy system will lose money over a large sample even with a hot streak at the start. Your Trading Journal calculates this automatically once you've logged enough trades — aim for at least 30–50 trades before drawing conclusions about a strategy.
+3.3 Backtesting without fooling yourself
+Define your entry, stop, and exit rules in writing before you look at historical data — not after
+Test on data the rules weren't built from (out-of-sample testing), not just the chart you used to design the strategy
+Account for realistic slippage and fees — a strategy that's profitable before costs is often unprofitable after them
+Small sample sizes lie. 10 trades tell you almost nothing; 100+ trades start to tell you something real
+3.4 The overfitting trap
+Adding more and more conditions to a strategy until it perfectly explains the last 6 months of price action is called curve-fitting, and it is one of the most common ways new traders convince themselves they've found a holy grail. A robust strategy should have a small number of simple, explainable rules — not a dozen stacked conditions that only make sense in hindsight.
+Module 4 — A Practical Technical Framework
+4.1 Multi-timeframe analysis
+Use a higher timeframe to establish bias and context (the regime from Module 1), a middle timeframe to identify the setup, and a lower timeframe to refine entry timing. Trading a single timeframe in isolation means you're missing the larger structure your trade sits inside.
+4.2 Setup vs. trigger
+A setup is the condition that puts a symbol on your watchlist — price approaching a key zone, a trend pullback completing, a range boundary being tested. A trigger is the specific, objective signal that tells you to actually enter. Confusing the two is a common source of early, premature entries.
+4.3 Confluence without overcomplication
+Confluence means multiple independent signals agreeing at the same location — a structural zone, a trend pullback level, and a round number all lining up, for example. The goal is 2–3 independent factors agreeing, not eight indicators stacked on top of each other that are all measuring the same underlying price action in different ways.
+Module 5 — Trading Psychology & Discipline
+5.1 The behavior gap
+The gap between a strategy's theoretical returns and a trader's actual realized returns is almost always explained by behavior, not analysis. Skipping the plan after two losses, doubling size to "get it back," or exiting winners early out of fear are the real profit killers — not a slightly suboptimal entry technique.
+5.2 Common failure patterns
+Revenge trading — increasing size or frequency immediately after a loss to "win it back"
+FOMO entries — entering after a move has already happened because you don't want to "miss it"
+Moving stops further away mid-trade because you don't want to be "proven wrong"
+Overtrading during choppy, low-quality conditions out of boredom or impatience
+5.3 A pre-trade checklist
+Before entering any trade, answer these out loud or in writing:
+What regime is this market in, and does my setup fit it?
+Where exactly is my stop, and what is my risk in R?
+What specifically would tell me I'm wrong, before I'm down more than planned?
+Am I taking this trade because of my plan, or because of how I feel right now?
+5.4 Using your journal as a mirror, not a scoreboard
+The Trading Journal in your toolkit isn't just for calculating win rate — the Notes and Emotion/Mistake Tag columns are where the real value is. Review them weekly. Patterns in your mistakes are far more actionable than patterns in your winners.
+Module 6 — Putting It Together: A Repeatable Process
+6.1 A simple weekly routine
+Sunday: review the prior week's trades in your journal, identify the regime for the week ahead on your core watchlist
+Daily, pre-market: check higher-timeframe context, mark key zones, decide what setups you're willing to take today
+Pre-trade: run the Position Size & Risk Calculator before every entry, not after
+Post-trade: log the trade immediately in your journal while the context is still fresh, including the emotion tag
+Weekly review: pull up the Dashboard — win rate, profit factor, average R — and look for the pattern in your losses
+6.2 Combining the toolkit
+The Calculator answers "how much," the Journal answers "how did that go, and why." Used together over enough trades, they replace guesswork with a real, personal statistical record of what actually works for you — which is worth more than any single strategy taught in a course, including this one.
+6.3 Where to go from here
+Markets change. A process built on regime awareness, disciplined risk, and honest review of your own results will outlast any specific setup taught today. Revisit this material periodically — particularly Modules 2 and 5 — as your account grows and the psychological stakes change with it.
+— End of Course —

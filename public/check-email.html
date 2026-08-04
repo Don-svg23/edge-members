@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Check your email — Edge Trading Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ffffff;--text:#191919;--text-2:#5e5e5f;--outline:#c4c7c7;--heading:'Fraunces',Georgia,serif;--body:'Inter',sans-serif;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.card{max-width:420px;width:100%;padding:24px;text-align:center;}
+.brand{font-family:var(--heading);font-size:15px;margin-bottom:40px;}
+h1{font-family:var(--heading);font-weight:500;font-size:24px;margin:0 0 10px;}
+p{color:var(--text-2);font-size:14px;line-height:1.6;}
+.dev{margin-top:28px;padding:16px;background:#f4f3f3;border:1px dashed var(--outline);border-radius:10px;font-size:12.5px;text-align:left;word-break:break-all;}
+.dev a{color:var(--text);}
+.dev-label{font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-2);display:block;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">EDGE TRADING CO.</div>
+  <h1>Check your email</h1>
+  <p id="msg">We sent a login link to your inbox. It's good for 15 minutes.</p>
+  <div class="dev" id="devBox" style="display:none;">
+    <span class="dev-label">Dev mode — no email service configured yet</span>
+    <a id="devLink" href="#"></a>
+  </div>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const devLink = params.get('devLink');
+  if (devLink) {
+    document.getElementById('devBox').style.display = 'block';
+    document.getElementById('devLink').href = devLink;
+    document.getElementById('devLink').textContent = devLink;
+  }
+</script>
+</body>
+</html>

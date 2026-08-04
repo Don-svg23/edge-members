@@ -12,7 +12,7 @@ const LESSONS = require('./lessons');
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 app.use(express.static('public'));
 
@@ -327,6 +327,77 @@ app.delete('/api/trades/:id', requireSession, (req, res) => {
   res.json({ ok: true });
 });
 
+// --- CSV import (bulk-add trades from a broker export or your own file) --
+
+function splitCSVLine(line) {
+  const out = [];
+  let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQuotes = false; }
+      else cur += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function parseTradesCSV(text) {
+  const lines = String(text).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+  const col = names => { const i = names.map(n => headers.indexOf(n)).find(i => i !== -1); return i === undefined ? -1 : i; };
+  const iSymbol = col(['symbol', 'instrument', 'ticker']);
+  const iDirection = col(['direction', 'side', 'type']);
+  const iEntry = col(['entry', 'entry price', 'open', 'open price']);
+  const iStop = col(['stop', 'stop loss', 'sl']);
+  const iExit = col(['exit', 'exit price', 'close', 'close price']);
+  const iStrategy = col(['strategy', 'setup']);
+  const iEmotion = col(['emotion', 'tag', 'mistake']);
+  const iNotes = col(['notes', 'note', 'comment']);
+  const iDate = col(['date', 'datetime', 'time', 'opened']);
+
+  const trades = [];
+  for (let r = 1; r < lines.length; r++) {
+    const cols = splitCSVLine(lines[r]);
+    const symbol = iSymbol >= 0 ? cols[iSymbol] : '';
+    const entry = iEntry >= 0 ? Number(cols[iEntry]) : NaN;
+    const exit = iExit >= 0 ? Number(cols[iExit]) : NaN;
+    if (!symbol || !Number.isFinite(entry) || !Number.isFinite(exit)) continue;
+    const stop = iStop >= 0 ? Number(cols[iStop]) : NaN;
+    const rawDir = (iDirection >= 0 ? cols[iDirection] : '').toLowerCase();
+    const parsedDate = iDate >= 0 && cols[iDate] ? new Date(cols[iDate]) : null;
+    trades.push({
+      symbol: symbol.slice(0, 20),
+      direction: /short|sell/.test(rawDir) ? 'short' : 'long',
+      entry,
+      stop: Number.isFinite(stop) ? stop : 0,
+      exit,
+      riskAmount: 0,
+      emotion: (iEmotion >= 0 ? cols[iEmotion] : '').slice(0, 40),
+      strategy: (iStrategy >= 0 ? cols[iStrategy] : '').slice(0, 40),
+      notes: (iNotes >= 0 ? cols[iNotes] : '').slice(0, 500),
+      createdAt: parsedDate && !isNaN(parsedDate) ? parsedDate.toISOString() : new Date().toISOString(),
+    });
+  }
+  return trades;
+}
+
+app.post('/api/trades/import', requireSession, (req, res) => {
+  const member = store.loadMember(req.member.email);
+  const parsed = parseTradesCSV(req.body.csv).slice(0, 500);
+  const base = Date.now();
+  const newTrades = parsed.map((t, i) => ({ id: base + i, ...t }));
+  member.trades = [...newTrades, ...(member.trades || [])];
+  store.saveMember(req.member.email, member);
+  res.json({ ok: true, imported: newTrades.length });
+});
+
 // --- Risk Console (real live calculator) --------------------------------
 
 app.get('/calculator', requireSession, safeRoute(async (req, res) => {
@@ -524,6 +595,34 @@ function renderCourse(progress) {
   `);
 }
 
+function renderCSVImportBlock() {
+  const template = 'symbol,direction,entry,stop,exit,strategy,emotion,notes,date\nEURUSD,long,1.1000,1.0950,1.1120,Breakout Retest,Plan followed,,2026-01-15\n';
+  return `
+    <div class="import-box">
+      <p class="muted">Already have a trade history? Import it instead of typing every row — upload a CSV with columns like <code>symbol, direction, entry, stop, exit</code> (strategy, emotion, notes, date are optional). Rows without a stop price show as 0R since R-multiple can't be computed without one.</p>
+      <input type="file" id="csvFile" accept=".csv,text/csv">
+      <button class="btn" id="csvImportBtn" type="button">Import CSV</button>
+      <a href="data:text/csv;charset=utf-8,${encodeURIComponent(template)}" download="trade-import-template.csv">Download template</a>
+      <p id="csvResult" class="muted"></p>
+    </div>
+    <script>
+      function attachCSVImport(onDone) {
+        document.getElementById('csvImportBtn').addEventListener('click', () => {
+          const file = document.getElementById('csvFile').files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const res = await (await fetch('/api/trades/import', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ csv: reader.result }) })).json();
+            document.getElementById('csvResult').textContent = 'Imported ' + res.imported + ' trade' + (res.imported === 1 ? '' : 's') + '.';
+            onDone();
+          };
+          reader.readAsText(file);
+        });
+      }
+    </script>
+  `;
+}
+
 function renderLedger() {
   return shell('The Ledger', 'ledger', `
     <h1>The Ledger</h1>
@@ -552,6 +651,8 @@ function renderLedger() {
       <input name="notes" placeholder="Notes" style="grid-column:1/-1;">
       <button type="submit" style="grid-column:1/-1;">Log trade</button>
     </form>
+
+    ${renderCSVImportBlock()}
 
     <div id="tradeList"></div>
 
@@ -606,6 +707,7 @@ function renderLedger() {
         e.target.reset();
         load();
       });
+      attachCSVImport(load);
       load();
     </script>
   `);
@@ -725,6 +827,8 @@ function renderStrategyLab() {
       <button type="submit">Log trade</button>
     </form>
 
+    ${renderCSVImportBlock()}
+
     <h2>Strategy comparison</h2>
     <div id="stratTable"></div>
 
@@ -765,6 +869,7 @@ function renderStrategyLab() {
         e.target.reset();
         load();
       });
+      attachCSVImport(load);
       load();
     </script>
   `);
@@ -884,6 +989,10 @@ a.btn{display:inline-block;}
 .quiz-opt.wrong{background:#fdecea;border-color:#a33;}
 .quiz-feedback{font-size:13px;color:var(--text-2);margin-top:6px;}
 .criteria-box{width:100%;min-height:110px;padding:12px 14px;border:1px solid var(--outline);border-radius:8px;font-family:inherit;font-size:13.5px;line-height:1.6;resize:vertical;}
+.import-box{margin:18px 0;padding:14px 16px;background:var(--surface);border:1px solid var(--outline);border-radius:10px;}
+.import-box input[type=file]{font-size:12.5px;max-width:220px;}
+.import-box a{font-size:12px;margin-left:10px;color:var(--text);}
+.import-box code{background:var(--outline);padding:1px 5px;border-radius:4px;font-size:12px;}
 @media (max-width:720px){body{flex-direction:column;} .sidebar{width:100%;height:auto;position:static;display:flex;flex-wrap:wrap;gap:4px;} .course-layout,.calc-layout{grid-template-columns:1fr;}}
 </style></head><body>
 <div class="sidebar">

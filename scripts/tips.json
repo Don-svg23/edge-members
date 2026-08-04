@@ -1,0 +1,20 @@
+[
+  "Price is an auction, not a line — every candle is the record of who was more aggressive, buyers or sellers, over that period.",
+  "Support and resistance are zones, not lines — draw them with width, and expect the first touch to be tested, not necessarily respected.",
+  "Your first decision every session isn't \"what do I buy,\" it's \"what regime am I in, and does my strategy actually work in this regime?\"",
+  "A 50% drawdown doesn't need a 50% gain to recover — it needs a 100% gain. Capital preservation is arithmetic, not a slogan.",
+  "Risk a fixed percentage of account equity per trade, not a fixed dollar amount — most professional discretionary traders risk 0.5%-2% per trade.",
+  "Track every trade in R, not just dollars. Win rate alone tells you almost nothing — a 40%-win-rate system at +2.5R can beat a 70%-win-rate system at +0.3R.",
+  "Expectancy = (Win% x Average Win) - (Loss% x Average Loss). This is the number that tells you if a strategy actually works.",
+  "Place stops beyond the structural level that would invalidate your idea, then size your position to fit that distance — not the other way around.",
+  "An edge is a repeatable, positive expectancy over a large sample of trades — not a single winning trade or a feeling of conviction.",
+  "Small sample sizes lie. 10 trades tell you almost nothing; 100+ trades start to tell you something real.",
+  "A setup puts a symbol on your watchlist. A trigger is the specific, objective signal that tells you to actually enter. Confusing the two causes premature entries.",
+  "The gap between a strategy's theoretical returns and your actual returns is almost always explained by behavior, not analysis.",
+  "Before entering any trade, ask: where exactly is my stop, and what is my risk in R? Am I taking this trade because of my plan, or how I feel right now?",
+  "A pip is usually the fourth decimal place on a currency pair. A lot is 100,000 units of the base currency, with mini and micro lots for smaller accounts.",
+  "Leverage magnifies gains and losses by the same ratio — it doesn't change your edge, it changes how violently your account moves for a given price change.",
+  "A stop order sits inactive until price reaches your trigger, then becomes a market order — which is why fast moves can cause it to fill past your intended level.",
+  "Volatility isn't the same as risk. A volatile asset can be traded safely with a small enough position; the danger is sizing that ignores it.",
+  "A written trading plan removes the moment-to-moment emotional decision-making that causes most costly mistakes. A hunch has no rule to check yourself against."
+]

@@ -116,7 +116,7 @@ async function sendMagicLink(email, req) {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'Edge Trading Co. <onboarding@resend.dev>',
+      from: 'Edge Trading Co. <login@edgetradingco.com>',
       to: [email],
       subject: 'Your login link',
       html: `<p>Click below to access your Edge Trading Co. account. This link expires in 15 minutes.</p><p><a href="${link}">${link}</a></p>`,

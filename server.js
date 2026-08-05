@@ -159,6 +159,19 @@ function renderFreeCalculator() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Free Position Size Calculator — Edge Trading Co.</title>
+<meta name="description" content="A free, real position size calculator — no login, no catch. Enter your account balance, risk %, entry, and stop to get exact position size and dollars at risk.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Position Size Calculator — Edge Trading Co.">
+<meta property="og:description" content="The same math behind our paid tools — free, no login, no catch.">
+<meta property="og:image" content="https://members.edgetradingco.com/og-image.png">
+<meta property="og:url" content="https://members.edgetradingco.com/free-calculator">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free Position Size Calculator — Edge Trading Co.">
+<meta name="twitter:description" content="The same math behind our paid tools — free, no login, no catch.">
+<meta name="twitter:image" content="https://members.edgetradingco.com/og-image.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Free Position Size Calculator","applicationCategory":"FinanceApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"A free position size and risk calculator for traders. Enter account balance, risk percentage, entry price, and stop price to get position size and dollar risk."}
+</script>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">

@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const PRODUCTS = require('./products');
 const store = require('./store');
 const LESSONS = require('./lessons');
+const TIPS = require('./scripts/tips.json');
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -146,6 +147,157 @@ app.post('/auth/request', async (req, res) => {
 });
 
 app.get('/check-email', (req, res) => res.sendFile(path.join(__dirname, 'public', 'check-email.html')));
+
+// --- Free lead-magnet calculator (public, no login) --------------------
+
+const LEADS_FILE = path.join(__dirname, 'data', 'leads.json');
+function loadLeads() {
+  try { return JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8')); } catch { return []; }
+}
+function saveLead(email) {
+  if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+  const leads = loadLeads();
+  if (!leads.includes(email)) leads.push(email);
+  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
+}
+
+function renderFreeCalculator() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free Position Size Calculator — Edge Trading Co.</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--text:#191919;--text-2:#5e5e5f;--surface:#f4f3f3;--outline:#c4c7c7;--heading:'Fraunces',Georgia,serif;--body:'Inter',sans-serif;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);}
+.wrap{max-width:640px;margin:0 auto;padding:48px 24px 80px;}
+.brand{font-family:var(--heading);font-size:15px;text-align:center;margin-bottom:32px;}
+h1{font-family:var(--heading);font-weight:500;font-size:30px;text-align:center;margin:0 0 8px;}
+.sub{color:var(--text-2);text-align:center;margin:0 0 40px;font-size:15px;}
+.calc-box{background:var(--surface);border-radius:12px;padding:28px;margin-bottom:32px;}
+.grid-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+label{font-size:12.5px;color:var(--text-2);display:flex;flex-direction:column;gap:6px;}
+input{font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;}
+.result-row{display:flex;gap:24px;margin-top:24px;padding-top:24px;border-top:1px solid var(--outline);}
+.result{flex:1;text-align:center;}
+.result-num{font-family:var(--heading);font-size:28px;display:block;}
+.result-label{font-size:12px;color:var(--text-2);}
+.capture{text-align:center;}
+.capture h2{font-family:var(--heading);font-weight:500;font-size:20px;margin:0 0 8px;}
+.capture p{color:var(--text-2);font-size:14px;margin:0 0 20px;}
+.capture-form{display:flex;gap:8px;max-width:380px;margin:0 auto;}
+.capture-form input{flex:1;}
+button{font-family:var(--body);font-weight:600;font-size:14px;background:#191919;color:#fff;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;white-space:nowrap;}
+.msg{margin-top:14px;font-size:13.5px;color:var(--text-2);}
+.cta{text-align:center;margin-top:48px;font-size:13.5px;color:var(--text-2);}
+.cta a{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">EDGE TRADING CO.</div>
+  <h1>Free Position Size Calculator</h1>
+  <p class="sub">The same math behind our paid tools — free, no login, no catch.</p>
+  <div class="calc-box">
+    <form id="calcForm" class="grid-form">
+      <label>Account balance<input name="balance" type="number" step="any" value="10000"></label>
+      <label>Risk % per trade<input name="riskPct" type="number" step="any" value="1"></label>
+      <label>Entry price<input name="entry" type="number" step="any" value="100"></label>
+      <label>Stop price<input name="stop" type="number" step="any" value="98"></label>
+    </form>
+    <div class="result-row">
+      <div class="result"><span class="result-num" id="resPosition">—</span><span class="result-label">Position size (units)</span></div>
+      <div class="result"><span class="result-num" id="resRisk">—</span><span class="result-label">$ at risk</span></div>
+    </div>
+  </div>
+  <div class="capture">
+    <h2>Want more real tools like this?</h2>
+    <p>Drop your email — occasional real trading concepts, no spam, unsubscribe anytime.</p>
+    <form class="capture-form" id="leadForm">
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <button type="submit">Send me tips</button>
+    </form>
+    <div class="msg" id="leadMsg"></div>
+  </div>
+  <div class="cta">Need the full suite? <a href="https://edgetradingco.myshopify.com">See the tools →</a></div>
+</div>
+<script>
+  function calc() {
+    const f = document.getElementById('calcForm');
+    const balance = Number(f.balance.value) || 0;
+    const riskPct = Number(f.riskPct.value) || 0;
+    const entry = Number(f.entry.value) || 0;
+    const stop = Number(f.stop.value) || 0;
+    const riskAmount = balance * (riskPct / 100);
+    const perUnitRisk = Math.abs(entry - stop);
+    const position = perUnitRisk ? (riskAmount / perUnitRisk) : 0;
+    document.getElementById('resPosition').textContent = position ? position.toFixed(2) : '—';
+    document.getElementById('resRisk').textContent = riskAmount ? '$' + riskAmount.toFixed(2) : '—';
+  }
+  document.getElementById('calcForm').addEventListener('input', calc);
+  calc();
+
+  document.getElementById('leadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value.trim();
+    const msg = document.getElementById('leadMsg');
+    msg.textContent = 'Sending...';
+    try {
+      const res = await fetch('/api/leads', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const data = await res.json();
+      msg.textContent = data.ok ? "You're in — check your inbox." : 'Something went wrong, try again.';
+      if (data.ok) e.target.reset();
+    } catch {
+      msg.textContent = 'Something went wrong, try again.';
+    }
+  });
+</script>
+</body>
+</html>`;
+}
+
+app.get('/free-calculator', (req, res) => res.send(renderFreeCalculator()));
+
+app.post('/api/leads', async (req, res) => {
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return res.status(400).json({ ok: false, error: 'invalid-email' });
+
+  saveLead(email);
+
+  if (RESEND_API_KEY) {
+    // Welcome email to the lead.
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Edge Trading Co. <login@edgetradingco.com>',
+        to: [email],
+        subject: "You're in — here's a real concept to start with",
+        html: `<p>Thanks for grabbing the free calculator. No spam — just occasional real trading concepts, drawn straight from our course material.</p><p><strong>${escapeHtml(TIPS[Math.floor(Date.now() / 86400000) % TIPS.length])}</strong></p><p>Want the full toolkit? <a href="https://edgetradingco.myshopify.com">See what's there</a> — first 200 new customers get 40% off with code WELCOME40.</p>`,
+      }),
+    }).catch((e) => console.error('Lead welcome email failed:', e));
+
+    // Durable notification to the founder — the local leads.json file resets on every
+    // Render redeploy, so this email is the actual record of who signed up.
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Edge Trading Co. <login@edgetradingco.com>',
+        to: ['drdoomtheiv@hotmail.com'],
+        subject: 'New lead-magnet signup',
+        html: `<p>New free-calculator lead: <strong>${escapeHtml(email)}</strong></p>`,
+      }),
+    }).catch((e) => console.error('Lead notification email failed:', e));
+  }
+
+  res.json({ ok: true });
+});
 
 app.get('/auth/verify', async (req, res) => {
   const { token } = req.query;

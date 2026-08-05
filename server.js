@@ -150,16 +150,7 @@ app.get('/check-email', (req, res) => res.sendFile(path.join(__dirname, 'public'
 
 // --- Free lead-magnet calculator (public, no login) --------------------
 
-const LEADS_FILE = path.join(__dirname, 'data', 'leads.json');
-function loadLeads() {
-  try { return JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8')); } catch { return []; }
-}
-function saveLead(email) {
-  if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
-  const leads = loadLeads();
-  if (!leads.includes(email)) leads.push(email);
-  fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
-}
+const leadsStore = require('./leads');
 
 function renderFreeCalculator() {
   return `<!doctype html>
@@ -267,7 +258,7 @@ app.post('/api/leads', async (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
   if (!email || !email.includes('@')) return res.status(400).json({ ok: false, error: 'invalid-email' });
 
-  saveLead(email);
+  await leadsStore.addLead(email, 'free-calculator');
 
   if (RESEND_API_KEY) {
     // Welcome email to the lead.

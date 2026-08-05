@@ -954,6 +954,7 @@ function shell(title, active, body) {
   const nav = NAV.map(n => `<a class="nav-link ${n.key === active ? 'active' : ''}" href="${n.href}">${n.label}</a>`).join('');
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — Edge Trading Co.</title>
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>

@@ -105,9 +105,15 @@ function expandBundles(handles) {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
+// Force links to the branded domain even if the request came in on the
+// onrender.com fallback host — a link domain that doesn't match the sending
+// domain is a strong spam/phishing signal to mail providers.
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
+
 async function sendMagicLink(email, req) {
   const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '15m' });
-  const link = `${req.protocol}://${req.get('host')}/auth/verify?token=${token}`;
+  const origin = PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+  const link = `${origin}/auth/verify?token=${token}`;
   console.log(`\n[magic link] ${email} -> ${link}\n`);
 
   if (!RESEND_API_KEY) return { link, sent: false };

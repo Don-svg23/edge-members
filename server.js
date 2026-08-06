@@ -12,6 +12,42 @@ const LESSONS = require('./lessons');
 const TIPS = require('./scripts/tips.json');
 
 const app = express();
+
+// Shopify webhook: order paid -> email the buyer their Discord invite.
+// Registered before the global JSON/urlencoded parsers below because
+// Shopify's HMAC signature must be verified against the raw, unparsed body.
+app.post('/webhooks/shopify/orders-paid', express.raw({ type: 'application/json' }), (req, res) => {
+  // Webhooks created via Settings -> Notifications in the plain Shopify admin
+  // are signed with a separate "webhook signing secret" shown at creation
+  // time — NOT the app's client secret. Prefer that dedicated var if set.
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET || process.env.SHOPIFY_API_SECRET || '';
+  const hmacHeader = req.get('X-Shopify-Hmac-Sha256') || '';
+  if (!secret || !hmacHeader) return res.status(401).send('missing signature');
+
+  const digest = crypto.createHmac('sha256', secret).update(req.body).digest('base64');
+  const a = Buffer.from(hmacHeader);
+  const b = Buffer.from(digest);
+  const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!valid) {
+    console.error('Shopify webhook: HMAC verification failed');
+    return res.status(401).send('invalid signature');
+  }
+
+  // Ack immediately — Shopify retries/times out if we're slow, and the
+  // actual email send doesn't need to block the response.
+  res.status(200).send('ok');
+
+  let order;
+  try { order = JSON.parse(req.body.toString('utf8')); }
+  catch (e) { console.error('Shopify webhook: bad JSON payload', e); return; }
+
+  const email = (order.email || order.contact_email || '').trim();
+  if (!email) { console.error('Shopify webhook: order had no email, skipping', order.id); return; }
+
+  const items = (order.line_items || []).map((li) => li.title).filter(Boolean);
+  sendDiscordInviteEmail(email, items).catch((e) => console.error('Discord invite email failed:', e));
+});
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
@@ -105,6 +141,30 @@ function expandBundles(handles) {
 // --- Magic-link auth ---------------------------------------------------
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+
+// Discord is now bundled free with every product (see products.js) instead
+// of being sold as its own SKU. This fires from the orders-paid webhook above.
+const DISCORD_INVITE_URL = process.env.DISCORD_INVITE_URL
+  || (PRODUCTS.find((p) => p.kind === 'discord') || {}).discordUrl
+  || '';
+
+async function sendDiscordInviteEmail(email, itemTitles) {
+  if (!RESEND_API_KEY) { console.log(`[dev mode] Would send Discord invite to ${email} for:`, itemTitles); return; }
+  if (!DISCORD_INVITE_URL) { console.error('sendDiscordInviteEmail: no DISCORD_INVITE_URL configured'); return; }
+
+  const itemsLine = itemTitles.length ? `<p>Order: ${escapeHtml(itemTitles.join(', '))}</p>` : '';
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Edge Trading Co. <login@edgetradingco.com>',
+      to: [email],
+      subject: 'Your Discord invite — Edge Trading Co.',
+      html: `<p>Thanks for the order! Every purchase includes a free invite to our private Discord.</p>${itemsLine}<p><a href="${DISCORD_INVITE_URL}">${DISCORD_INVITE_URL}</a></p><p>This link is unlisted — please don't share it publicly.</p>`,
+    }),
+  });
+  if (!res.ok) console.error('Resend send failed (discord invite):', res.status, await res.text());
+}
 
 // Force links to the branded domain even if the request came in on the
 // onrender.com fallback host — a link domain that doesn't match the sending
@@ -429,12 +489,14 @@ app.post('/api/course/progress', requireSession, requireProductApi('asset-pack-8
 // --- Discord / Mentor ----------------------------------------------------
 
 app.get('/discord', requireSession, safeRoute(async (req, res) => {
-  const product = PRODUCTS.find(p => p.kind === 'discord');
-  if (!(await requireProduct(req, res, product.handle))) return res.status(403).send(renderLocked());
+  // Discord is bundled free with every product now, not sold as its own SKU —
+  // so access is "owns anything," not "owns the discord handle."
+  const purchased = await findPurchasedHandlesForEmail(req.member.email);
+  if (purchased.size === 0) return res.status(403).send(renderLocked());
   res.send(shell('Private Trading Community', 'discord', `
     <h1>Private Trading Community</h1>
     <p class="muted">You're in. This link is for your access only — please don't share it publicly.</p>
-    <a class="btn" href="${product.discordUrl}" target="_blank" rel="noopener">Join the Discord server &rarr;</a>
+    <a class="btn" href="${DISCORD_INVITE_URL}" target="_blank" rel="noopener">Join the Discord server &rarr;</a>
   `));
 }));
 

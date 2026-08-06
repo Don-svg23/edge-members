@@ -16,7 +16,7 @@ module.exports = [
     kind: 'discord',
     real: true,
     price: '675 kr',
-    discordUrl: 'https://discord.gg/gsbHWTHdk',
+    discordUrl: 'https://discord.gg/54rM9G5F4K',
   },
   {
     handle: 'asset-pack-89298370562-example-product-2',

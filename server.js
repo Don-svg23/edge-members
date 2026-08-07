@@ -241,22 +241,39 @@ function renderFreeCalculator() {
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);}
 .wrap{max-width:640px;margin:0 auto;padding:48px 24px 80px;}
 .brand{font-family:var(--heading);font-size:15px;text-align:center;margin-bottom:32px;}
-h1{font-family:var(--heading);font-weight:500;font-size:30px;text-align:center;margin:0 0 8px;}
+h1{font-family:var(--heading);font-weight:500;font-size:clamp(24px,7vw,30px);text-align:center;margin:0 0 8px;}
 .sub{color:var(--text-2);text-align:center;margin:0 0 40px;font-size:15px;}
 .calc-box{background:var(--surface);border-radius:12px;padding:28px;margin-bottom:32px;}
 .grid-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-label{font-size:12.5px;color:var(--text-2);display:flex;flex-direction:column;gap:6px;}
-input{font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;}
+label{font-size:12.5px;color:var(--text-2);display:flex;flex-direction:column;gap:6px;min-width:0;}
+/* width:100% + min-width:0 stop the browser's default intrinsic input width
+   from forcing horizontal overflow on phones. 16px avoids iOS focus zoom. */
+input{font-family:var(--body);font-size:16px;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;width:100%;min-width:0;}
 .result-row{display:flex;gap:24px;margin-top:24px;padding-top:24px;border-top:1px solid var(--outline);}
-.result{flex:1;text-align:center;}
-.result-num{font-family:var(--heading);font-size:28px;display:block;}
+.result{flex:1;min-width:0;text-align:center;}
+.result-num{font-family:var(--heading);font-size:clamp(24px,6.5vw,28px);display:block;}
 .result-label{font-size:12px;color:var(--text-2);}
+/* Reward block sits directly under the result — the moment the visitor has
+   just got value is the moment they're most open to the offer. */
+.reward{border:1px solid var(--outline);border-radius:12px;padding:24px;margin-bottom:32px;text-align:center;}
+.reward-lead{margin:0 0 18px;font-size:15px;color:var(--text-2);}
+.code-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;}
+.code-label{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-2);}
+.code{font-family:var(--heading);font-size:26px;letter-spacing:.06em;border-bottom:2px solid var(--text);}
+.reward-terms{margin:14px 0 20px;font-size:12.5px;color:var(--text-2);}
+.btn-link{display:inline-block;font-size:14px;font-weight:600;background:#191919;color:#fff;border-radius:999px;padding:13px 26px;text-decoration:none;}
 .capture{text-align:center;}
 .capture h2{font-family:var(--heading);font-weight:500;font-size:20px;margin:0 0 8px;}
 .capture p{color:var(--text-2);font-size:14px;margin:0 0 20px;}
-.capture-form{display:flex;gap:8px;max-width:380px;margin:0 auto;}
-.capture-form input{flex:1;}
-button{font-family:var(--body);font-weight:600;font-size:14px;background:#191919;color:#fff;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;white-space:nowrap;}
+.capture-form{display:flex;flex-wrap:wrap;gap:8px;max-width:380px;margin:0 auto;}
+.capture-form input{flex:1 1 190px;min-width:0;}
+button{font-family:var(--body);font-weight:600;font-size:15px;background:#191919;color:#fff;border:none;border-radius:999px;padding:13px 22px;cursor:pointer;white-space:nowrap;}
+@media (max-width:430px){
+  .wrap{padding:36px 18px 64px;}
+  .calc-box{padding:20px;}
+  .grid-form{grid-template-columns:1fr;}
+  .capture-form input,.capture-form button{flex:1 1 100%;}
+}
 .msg{margin-top:14px;font-size:13.5px;color:var(--text-2);}
 .cta{text-align:center;margin-top:48px;font-size:13.5px;color:var(--text-2);}
 .cta a{color:var(--text);}
@@ -279,16 +296,21 @@ button{font-family:var(--body);font-weight:600;font-size:14px;background:#191919
       <div class="result"><span class="result-num" id="resRisk">—</span><span class="result-label">$ at risk</span></div>
     </div>
   </div>
+  <div class="reward">
+    <p class="reward-lead">This is the same math inside our paid tools. If you want them to do it for you:</p>
+    <div class="code-row"><span class="code-label">New customer code</span><span class="code">WELCOME40</span></div>
+    <p class="reward-terms">40% off your first order. First 200 uses, one per customer, through 31 Dec 2026.</p>
+    <a class="btn-link" href="https://edgetradingco.myshopify.com">Browse the tools &rarr;</a>
+  </div>
   <div class="capture">
-    <h2>Want more real tools like this?</h2>
-    <p>Drop your email — occasional real trading concepts, no spam, unsubscribe anytime.</p>
+    <h2>Want more like this?</h2>
+    <p>Occasional emails on the trading concepts behind the tools. No hype, unsubscribe anytime.</p>
     <form class="capture-form" id="leadForm">
       <input type="email" name="email" placeholder="you@example.com" required>
       <button type="submit">Send me tips</button>
     </form>
     <div class="msg" id="leadMsg"></div>
   </div>
-  <div class="cta">Need the full suite? <a href="https://edgetradingco.myshopify.com">See the tools →</a></div>
 </div>
 <script>
   function calc() {

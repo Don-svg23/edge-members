@@ -142,6 +142,10 @@ function expandBundles(handles) {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
+// Pinterest ad account 549770665696. Overridable via env so the tag can be
+// disabled (set to empty) without a deploy.
+const PINTEREST_TAG_ID = process.env.PINTEREST_TAG_ID || '2612761978743';
+
 // Discord is now bundled free with every product (see products.js) instead
 // of being sold as its own SKU. This fires from the orders-paid webhook above.
 const DISCORD_INVITE_URL = process.env.DISCORD_INVITE_URL
@@ -237,6 +241,51 @@ function renderFreeCalculator() {
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Pinterest tag. The Shopify app installs this on the storefront only; this
+     page is a separate app, so without it Pinterest ads see clicks but no
+     conversions, and cannot build a retargeting audience.
+     Nothing loads until the visitor consents — the tag sets third-party
+     cookies, which under ePrivacy/GDPR needs opt-in before it fires. There is
+     deliberately no <noscript> pixel, since that would fire regardless. -->
+<script>
+(function () {
+  var KEY = 'etc-pinterest-consent';
+  var TAG = '${PINTEREST_TAG_ID}';
+
+  function loadTag() {
+    if (!TAG || window.pintrk) return;
+    !function(e){if(!window.pintrk){window.pintrk=function(){window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var n=window.pintrk;n.queue=[],n.version="3.0";var t=document.createElement("script");t.async=!0,t.src=e;var r=document.getElementsByTagName("script")[0];r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
+    pintrk('load', TAG);
+    pintrk('page');
+  }
+
+  function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+
+  function decide(value) {
+    try { localStorage.setItem(KEY, value); } catch (e) {}
+    var bar = document.getElementById('consentBar');
+    if (bar) bar.hidden = true;
+    document.body.style.paddingBottom = '';
+    if (value === 'granted') loadTag();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var stored = read();
+    if (stored === 'granted') { loadTag(); return; }
+    var bar = document.getElementById('consentBar');
+    if (!bar) return;
+    if (stored === 'denied') return;
+    bar.hidden = false;
+    // The bar is fixed to the bottom; without this it sits on top of the email
+    // signup once the visitor scrolls down.
+    var pad = function () { document.body.style.paddingBottom = bar.offsetHeight + 'px'; };
+    pad();
+    window.addEventListener('resize', pad);
+    document.getElementById('consentYes').addEventListener('click', function () { decide('granted'); });
+    document.getElementById('consentNo').addEventListener('click', function () { decide('denied'); });
+  });
+})();
+</script>
 <style>
 :root{--bg:#fff;--text:#191919;--text-2:#5e5e5f;--surface:#f4f3f3;--outline:#c4c7c7;--heading:'Fraunces',Georgia,serif;--body:'Inter',sans-serif;}
 *{box-sizing:border-box;}
@@ -264,6 +313,14 @@ input{font-family:var(--body);font-size:16px;padding:10px 12px;border:1px solid 
 .code{font-family:var(--heading);font-size:26px;letter-spacing:.06em;border-bottom:2px solid var(--text);}
 .reward-terms{margin:14px 0 20px;font-size:12.5px;color:var(--text-2);}
 .btn-link{display:inline-block;font-size:14px;font-weight:600;background:#191919;color:#fff;border-radius:999px;padding:13px 26px;text-decoration:none;}
+/* Consent bar — deliberately quiet, and never covers the calculator. */
+.consent{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#191919;color:#fff;
+  padding:14px 18px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:center;}
+.consent p{margin:0;font-size:13.5px;line-height:1.45;max-width:520px;color:rgba(255,255,255,.85);}
+.consent-actions{display:flex;gap:8px;flex-shrink:0;}
+.consent button{font-size:13.5px;padding:9px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.45);
+  background:transparent;color:#fff;cursor:pointer;font-family:var(--body);font-weight:600;}
+.consent button#consentYes{background:#fff;color:#191919;border-color:#fff;}
 .capture{text-align:center;}
 .capture h2{font-family:var(--heading);font-weight:500;font-size:20px;margin:0 0 8px;}
 .capture p{color:var(--text-2);font-size:14px;margin:0 0 20px;}
@@ -314,6 +371,13 @@ button{font-family:var(--body);font-weight:600;font-size:15px;background:#191919
     <div class="msg" id="leadMsg"></div>
   </div>
 </div>
+<div class="consent" id="consentBar" hidden>
+  <p>Can we measure which ads bring people here? Analytics cookies only. The calculator works exactly the same either way.</p>
+  <div class="consent-actions">
+    <button type="button" id="consentNo">No thanks</button>
+    <button type="button" id="consentYes">Allow</button>
+  </div>
+</div>
 <script>
   function calc() {
     const f = document.getElementById('calcForm');
@@ -339,7 +403,12 @@ button{font-family:var(--body);font-weight:600;font-size:15px;background:#191919
       const res = await fetch('/api/leads', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
       const data = await res.json();
       msg.textContent = data.ok ? "You're in — check your inbox." : 'Something went wrong, try again.';
-      if (data.ok) e.target.reset();
+      if (data.ok) {
+        e.target.reset();
+        // Only fires on a confirmed save, so Pinterest optimises against real
+        // signups rather than form submissions that failed server-side.
+        if (window.pintrk) pintrk('track', 'lead');
+      }
     } catch {
       msg.textContent = 'Something went wrong, try again.';
     }

@@ -218,6 +218,8 @@ function renderFreeCalculator() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Pinterest site claim — needed for pin attribution and ad analytics -->
+<meta name="p:domain_verify" content="8f3e020d7230dd60e76723a1534d8ebe">
 <title>Free Position Size Calculator — Edge Trading Co.</title>
 <meta name="description" content="A free, real position size calculator — no login, no catch. Enter your account balance, risk %, entry, and stop to get exact position size and dollars at risk.">
 <meta property="og:type" content="website">
